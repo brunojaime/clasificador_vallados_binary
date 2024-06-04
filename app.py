@@ -2,12 +2,23 @@ import numpy as np
 from tensorflow.keras.preprocessing import image
 import requests
 from io import BytesIO
-from tensorflow.keras.models import load_model
+#from tensorflow.keras.models import load_model
+from flask import Flask, request, jsonify
 
+import json
+from keras.models import model_from_json
 
-# Cargar la arquitectura del modelo desde un archivo JSON
+# Cargar la configuración del modelo desde el archivo JSON
+with open('config.json', 'r') as json_file:
+    model_json = json_file.read()
 
-model = load_model("vallado_classifier.keras")
+# Crear un modelo de Keras a partir de la configuración
+model = model_from_json(model_json)
+
+# Cargar los pesos en el modelo
+model.load_weights('model.weights.h5')
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
 def prepare_image(url):
     response = requests.get(url)
     img = image.load_img(BytesIO(response.content), target_size=(160, 160))  # Ajusta el tamaño según el requerido por tu modelo
@@ -16,7 +27,7 @@ def prepare_image(url):
     return img_array
 
 
-from flask import Flask, request, jsonify
+
 
 app = Flask(__name__)
 
@@ -31,3 +42,4 @@ def predict():
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
+
